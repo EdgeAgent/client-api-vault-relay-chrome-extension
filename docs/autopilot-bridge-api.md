@@ -1,18 +1,33 @@
 # Autopilot app ↔ Chrome gateway contract
 
-The extension is the user's local API gateway. It keeps provider keys in the password-encrypted Chrome vault and invokes only origins the user explicitly approves. The web app issues scoped instructions and records outcomes; it never receives the user's provider key or browser cookie.
+The agency's hosted application remains authoritative for its recipes, workflow definitions, assignments, approvals, schedules, server-side execution and audit trail. API-only workflows execute on the agency's server; they do not require this extension to be online. The Chrome extension is an optional, client-controlled browser connector for work that specifically needs that client's logged-in browser session. Pausing the local switch stops this device from syncing browser work; it does not pause or transfer control of agency-hosted server workflows. Disconnect/revoke affects only that device's connector credential.
+
+The extension keeps its local provider keys in the password-encrypted Chrome vault and invokes only origins the user explicitly approves. Pairing and queue requests never include those local keys or browser cookies. A separate app-side credential grant is required if a client wants an agency-hosted workflow to use that client's API key; that grant must follow the client-consent model below.
+
+## Ownership and execution boundary
+
+- The client owns its API connections and decides which automation/recipe may use each connection. Permission must be per credential and per workflow, with scope, expiry, usage visibility and revocation; agency staff must not be able to silently widen that grant.
+- The link is hierarchical: authenticated client profile ↔ `EDGE | AGENCY` workspace ↔ client workspace ↔ project ↔ device/credential grant. The one-time project code is the secure link handshake; all relationship IDs are bound by the server, not typed or trusted from the extension.
+- Client-owned API keys used by hosted workflows need an agency-app credential vault and opaque secret references with client-approved workflow scopes. The secret must not appear in UI, API responses, logs or run output; it must be decrypted only in the authorized worker at use time, encrypted at rest, usage-audited, and revocable by the client. The client must be told clearly that server-side execution means the trusted agency runtime can access the credential in memory while calling the provider.
+- `EDGE | AGENCY` retains control of its hosted workflow definitions, orchestration and server execution. API-only agency workflows execute server-side without the client's Chrome extension being online.
+- The extension's **Pause browser access** switch is local to one paired device. It blocks that device from syncing browser-dependent work and aborts an active queue request; it does not stop a server-hosted workflow or revoke the agency's separate app-side run authority.
+- Disconnect/revoke removes that device's connector credential. Revoking a client's API credential grant is a distinct server-side action and must stop future use of that credential.
+- A workflow that needs a client-specific logged-in browser remains queued/blocked when this device is paused or offline. The agency server must not label it completed.
+
+**Implementation boundary:** this repository now implements the extension-side switch and its local encrypted state. The API-key grant vault, server-side workflow runner and agency/client automation controls are application-side responsibilities and are not delivered by this Chrome-only code change.
 
 ## Pairing
 
-1. An authenticated agency/client app member opens **Connections → Chrome gateway → Pair device**. The app generates a cryptographically random, one-use code scoped to that member's workspace, with a short expiry (recommended: 5 minutes), and stores only a hash.
-2. In the unlocked extension vault, the user enters the app's HTTPS origin and the code. Chrome asks to grant only that exact app origin. The extension service worker sends `POST /api/extension/pair` with `{code, device:{name,version}}`, without cookies or redirects.
-3. The app atomically consumes the unexpired code, enforces current membership, creates a revocable device record, and returns `{deviceToken, workspaceName, role, expiresAt}`. It stores only a hash of the returned token. The extension stores the token inside its encrypted vault, never in page storage or logs.
+1. An authenticated `EDGE | AGENCY` workspace member opens a specific **client → project → Connections** page and creates a cryptographically random, one-use invitation code. The app binds it server-side to agency workspace, client profile, project and granted role, with a short expiry (recommended: 5 minutes), and stores only a hash. A client identity may be invited into the agency workspace; caller-supplied IDs must never set the link target.
+2. In the unlocked extension vault, the user enters the app's HTTPS origin and that project link code. Chrome asks to grant only that exact app origin. The extension service worker sends `POST /api/extension/pair` with `{code,device:{name,version}}`, without cookies or redirects.
+3. The app atomically consumes the unexpired code, enforces current membership/acceptance, creates a revocable device record scoped to the bound agency/client/project, and returns `{deviceToken,workspaceName,agencyName,clientName,projectName,role,expiresAt}`. It stores only a hash of the returned token. The extension stores the token and display labels inside its encrypted vault, never in page storage or logs.
 
 ## Requests
 
-- `GET /api/extension/queue` — requires `Authorization: Bearer <deviceToken>`, returns only work authorized for the paired workspace and extension role. Page content must not be included.
+- `GET /api/extension/queue` — requires `Authorization: Bearer <deviceToken>`, returns only work authorized for the paired workspace and extension role that specifically needs local browser access. API-only hosted work runs in the agency app independently. Page content must not be included.
 - `POST /api/extension/events` — requires the same device authorization and an idempotency key; records start/complete/fail/cancel/approval event metadata, the actor/device and a bounded result summary. Never accept provider keys, cookies or raw DOM dumps.
 - `POST /api/extension/disconnect` — revokes that device token, requiring the same authorization.
+- `POST /api/projects/:projectId/extension-pairing-codes` — agency-side authenticated action that creates the single-use code; derive project/client binding from the server-verified actor's membership and authorization, never from the extension payload.
 
 Every endpoint must check token hash, revocation/expiry, workspace membership and role server-side, use TLS in non-local deployments, rate-limit pairing, and audit the operation. A client-supplied workspace or role is informational only and never grants access. For local development only, `http://localhost`/`127.0.0.1` is allowed after explicit origin approval. Browser login cookies are never forwarded.
 

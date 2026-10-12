@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { webcrypto } from "node:crypto";
 import { resolve } from "node:path";
 
-const html = await readFile(resolve("/home/ubuntu/client-api-vault-relay/extension/popup.html"), "utf8");
+const html = await readFile(resolve(process.cwd(), "extension/popup.html"), "utf8");
 const storage = {};
 const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 async function waitUntil(assertion, timeoutMs = 4000) {
@@ -121,6 +121,37 @@ describe("premium extension popup", () => {
     await waitUntil(() => expect(sendButton.classList.contains("is-loading")).toBe(true));
     await waitUntil(() => expect(sendButton.disabled).toBe(false));
     expect(document.querySelector("#status").textContent).toContain("Provider unavailable");
+  });
+
+  it("links the client profile to a project and pauses only this device's browser bridge", async () => {
+    const sendMessage = vi.fn(async message => message.type === "AUTOPILOT_PAIR" ? {
+      ok: true,
+      pairing: { deviceToken: "device_token_123456789", workspaceName: "Agency workspace", agencyName: "EDGE | AGENCY", clientName: "Acme", projectName: "Website", role: "client", expiresAt: null },
+    } : { ok: true, items: [] });
+    await boot({ sendMessage });
+    document.querySelector("#createPassword").value = "production-ready-password";
+    document.querySelector("#confirmPassword").value = "production-ready-password";
+    submit("#createVaultForm");
+    await waitUntil(() => expect(document.querySelector("#appView").hidden).toBe(false));
+    document.querySelector('[data-surface="bridge"]').click();
+    document.querySelector("#bridgeBaseUrl").value = "https://agency.example";
+    document.querySelector("#bridgePairCode").value = "one-use-project-code";
+    submit("#bridgePairForm");
+    await waitUntil(() => expect(document.querySelector("#bridgeProject").textContent).toBe("Acme · Website"));
+    const accessSwitch = document.querySelector("#bridgeAccessSwitch");
+    expect(accessSwitch.getAttribute("aria-checked")).toBe("true");
+    expect(document.querySelector("#bridgeWorkspace").textContent).toBe("EDGE | AGENCY");
+    accessSwitch.click();
+    await waitUntil(() => expect(accessSwitch.getAttribute("aria-checked")).toBe("false"));
+    expect(document.querySelector("#bridgeSyncButton").disabled).toBe(true);
+    expect(document.querySelector("#status").textContent).toContain("server workflows can continue");
+    expect(sendMessage.mock.calls.filter(([message]) => message.type === "AUTOPILOT_QUEUE")).toHaveLength(0);
+    document.querySelector("#lockButton").click();
+    document.querySelector("#unlockPassword").value = "production-ready-password";
+    submit("#unlockVaultForm");
+    await waitUntil(() => expect(document.querySelector("#appView").hidden).toBe(false));
+    document.querySelector('[data-surface="bridge"]').click();
+    expect(document.querySelector("#bridgeAccessSwitch").getAttribute("aria-checked")).toBe("false");
   });
 
 });

@@ -2,7 +2,7 @@
 
 **Client-owned credentials. Agency/client handoff. Approved provider access.**
 
-A Manifest V3 Chrome extension that continues the existing Client API Vault Relay project. It combines the password-encrypted local API vault and exact-origin consent model with a workspace pairing surface for an agency/client app. The extension is intended to be the user's local gateway: the app can authorize work and receive receipts, while API keys stay in the user's encrypted Chrome profile.
+A Manifest V3 Chrome extension that continues the existing Client API Vault Relay project. It combines the password-encrypted local API vault and exact-origin consent model with a workspace pairing surface for an agency/client app. The extension pairing path never sends local provider keys to the app. To run client APIs inside agency-hosted workflows, the app must separately provide a client-consented, revocable, server-side credential grant; that app-side feature is not part of this extension change.
 
 > **Integration status:** this repository implements the extension client and publishes the expected app API contract in [`docs/autopilot-bridge-api.md`](docs/autopilot-bridge-api.md). Pairing, queue sync and revocation become live only when the app implements those endpoints and tenant-scoped token rules. No connected state is fabricated when the app is absent.
 
@@ -12,21 +12,22 @@ A Manifest V3 Chrome extension that continues the existing Client API Vault Rela
 | --- | --- | --- |
 | Encrypted local vault | PBKDF2-SHA-256 + AES-256-GCM encrypted credentials and paired device token; vault password is never stored. | Secrets are cleared from popup memory on lock. |
 | Exact-origin provider access | Requires Chrome's point-of-use permission for a specific provider origin. | No site-wide install-time access. |
-| App workspace pairing | Accepts a one-time code from an authenticated workspace and stores the returned opaque device token inside the encrypted vault. | Requires the companion app API described in the contract; app stores only a hash. |
+| Agency/client/project pairing | Accepts a one-use code bound by the server to an authenticated client profile, `EDGE | AGENCY` workspace, client and project; displays the linked project. | Requires the companion app API described in the contract; app stores only a hash. |
+| Client device control | Accessible switch pauses/resumes this device's browser gateway; pause aborts active queue sync and survives vault lock/unlock. | It does not stop `EDGE | AGENCY` hosted server workflows or revoke separate API grants. |
 | Local API gateway | Existing OpenAI-compatible, Gemini and Ollama adapters send provider requests from the extension worker. | Provider keys are not sent to the agency/client app. |
 | Semantic page index | On a user click, reads visible headings, labels and controls from the active tab; masks sensitive fields and patterns. | No cookies, hidden content, form values, screenshots, or automatic page actions. |
 | Manifest V3 package | Local popup, worker and icons in 16/32/48/128 px sizes. | No remotely loaded extension code. |
 
-The provider catalog is discovery material only: a listing does not guarantee that a provider is free, available, or authorized. This version displays app-assigned queue metadata only. It does **not** execute arbitrary page actions; an app response is not permission to act. Destructive/submitted browser changes still need an explicit exact-action approval workflow before execution is enabled.
+The provider catalog is discovery material only: a listing does not guarantee that a provider is free, available, or authorized. The client should own API grants and choose which workflows may use each credential; `EDGE | AGENCY` retains control of its own hosted workflow definitions and server execution. API-only hosted workflows can continue if this device's browser switch is paused. This extension version displays app-assigned queue metadata only; it does **not** execute arbitrary page actions or implement the server-side client credential vault/workflow controls. Destructive/submitted browser changes still need an explicit exact-action approval workflow before execution is enabled.
 
 ## Install in Chrome
 
-1. Download `client-api-vault-relay-chrome-extension-1.1.0.zip` from [`release/`](release/), or load the unpacked `extension/` directory.
+1. Download `client-api-vault-relay-chrome-extension-1.1.1.zip` from [`release/`](release/), or load the unpacked `extension/` directory.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Select **Load unpacked** and choose `extension/` (or use **Load unpacked** with the extracted release archive).
 4. Open the extension and create a vault with a password of at least 12 characters.
 5. Add a provider from **APIs**, provide your own key, and allow only the exact provider origin when Chrome asks.
-6. When the companion app supports the bridge contract, generate a one-use pairing code in its authenticated workspace and enter the app origin and code under **BRIDGE**.
+6. When the companion app supports the bridge contract, generate a one-use pairing code in its authenticated workspace and enter the app origin and code under **BRIDGE**. Use **Pause** to stop this device's browser connection without stopping agency-hosted server workflows.
 
 The release ZIP is an installable Chrome extension, not a published Chrome Web Store listing. Store submission, listing review and distribution are separate work.
 

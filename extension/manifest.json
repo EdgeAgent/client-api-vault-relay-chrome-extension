@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Autopilot Bridge — Vault Relay",
   "short_name": "Autopilot Bridge",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minimum_chrome_version": "121",
   "description": "A local API vault and approved gateway between agency and client workspaces.",
   "icons": {

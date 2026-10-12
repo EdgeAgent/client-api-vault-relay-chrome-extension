@@ -2,7 +2,7 @@ import { getProvider, providerCatalog, sourceCatalogues } from "./catalog.js";
 import { endpointPermissionOrigin, requestEndpointPermission, revokeEndpointPermission } from "./permissions.js";
 import { validateProviderBaseUrl } from "./providers.js";
 import { createVault, hasVault, maskKey, removeVault, saveVault, unlockVault } from "./vault.js";
-import { validateBridgeBaseUrl } from "./bridge.js";
+import { isLocalBrowserAccessEnabled, validateBridgeBaseUrl } from "./bridge.js";
 
 const state = { password: null, entries: [], activeEntryId: null, createdAt: null, bridge: null, messages: [], surface: "chat", bridgeBusy: false };
 const $ = selector => document.querySelector(selector);
@@ -342,13 +342,20 @@ function renderWorkspace() {
 
 function renderBridge() {
   const paired = Boolean(state.bridge?.deviceToken);
+  const localEnabled = isLocalBrowserAccessEnabled(state.bridge);
   $("#bridgePairForm").hidden = paired;
   $("#bridgeConnected").hidden = !paired;
-  $("#bridgeBadge").textContent = paired ? "PAIRED · LOCAL TOKEN" : "NOT PAIRED";
+  $("#bridgeBadge").textContent = paired ? (localEnabled ? "PAIRED · DEVICE ON" : "PAIRED · DEVICE PAUSED") : "NOT PAIRED";
   if (paired) {
     $("#bridgeBaseUrl").value = state.bridge.baseUrl;
-    $("#bridgeWorkspace").textContent = state.bridge.workspaceName;
+    $("#bridgeWorkspace").textContent = state.bridge.agencyName || state.bridge.workspaceName || "EDGE | AGENCY";
+    $("#bridgeProject").textContent = [state.bridge.clientName, state.bridge.projectName].filter(Boolean).join(" · ") || state.bridge.workspaceName;
     $("#bridgeRole").textContent = String(state.bridge.role).replaceAll("_", " ").toUpperCase();
+    $("#bridgeAccessSwitch").setAttribute("aria-checked", String(localEnabled));
+    $("#bridgeAccessSwitch").setAttribute("aria-label", localEnabled ? "Pause this device's browser access" : "Resume this device's browser access");
+    $("#bridgeLocalAccessState").textContent = localEnabled ? "Browser access enabled" : "Browser access paused";
+    $("#bridgeAccessActionLabel").textContent = localEnabled ? "Pause" : "Resume";
+    $("#bridgeSyncButton").disabled = !localEnabled;
   }
 }
 
@@ -374,7 +381,7 @@ $("#bridgePairForm").addEventListener("submit", async event => {
       payload: { baseUrl, code: $("#bridgePairCode").value.trim(), deviceName: "Chrome · " + navigator.platform },
     });
     if (!result?.ok) throw new Error(result?.error || "Pairing failed.");
-    state.bridge = { baseUrl, ...result.pairing, connectedAt: new Date().toISOString() };
+    state.bridge = { baseUrl, ...result.pairing, localEnabled: true, connectedAt: new Date().toISOString() };
     await persistEntries();
     $("#bridgePairCode").value = "";
     renderBridge();
@@ -384,7 +391,7 @@ $("#bridgePairForm").addEventListener("submit", async event => {
 });
 
 $("#bridgeSyncButton").addEventListener("click", async () => {
-  if (!state.bridge?.deviceToken) return;
+  if (!isLocalBrowserAccessEnabled(state.bridge)) return;
   state.bridgeBusy = true;
   $("#bridgeQueue").textContent = "Loading assigned work… Press Escape or Alt+S to interrupt.";
   try {
@@ -395,6 +402,21 @@ $("#bridgeSyncButton").addEventListener("click", async () => {
     setStatus(`Synced ${items.length} authorized item${items.length === 1 ? "" : "s"}. No page action was executed.`, true);
   } catch (error) { $("#bridgeQueue").textContent = error instanceof Error ? error.message : "Queue request failed."; }
   finally { state.bridgeBusy = false; }
+});
+
+$("#bridgeAccessSwitch").addEventListener("click", async () => {
+  if (!state.bridge?.deviceToken) return;
+  state.bridge.localEnabled = !isLocalBrowserAccessEnabled(state.bridge);
+  if (!state.bridge.localEnabled && state.bridgeBusy) {
+    state.bridgeBusy = false;
+    chrome.runtime.sendMessage({ type: "AUTOPILOT_ABORT" }).catch(() => undefined);
+    $("#bridgeQueue").textContent = "This device's browser bridge was paused. Agency-hosted workflows are unaffected.";
+  }
+  await persistEntries();
+  renderBridge();
+  setStatus(state.bridge.localEnabled
+    ? "This device's browser bridge is enabled. EDGE | AGENCY-hosted workflows remain under agency control."
+    : "This device's browser bridge is paused. EDGE | AGENCY server workflows can continue; this device will not sync browser work.", true);
 });
 
 $("#bridgeDisconnectButton").addEventListener("click", async () => {

@@ -3,6 +3,7 @@
 .bridge-connected { display: grid; gap: 14px; }
 .bridge-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid rgba(199,243,106,.22); border-radius: 12px; background: rgba(199,243,106,.055); }
 .bridge-summary strong { color: var(--text, #f5f6f2); font-size: 14px; }
+.bridge-summary small { display: block; margin-top: 4px; color: var(--muted, #9da39a); font-size: 10px; }
 .bridge-summary span { color: var(--muted, #9da39a); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
 .bridge-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .bridge-page-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -10,3 +11,14 @@
 .bridge-queue { min-height: 110px; max-height: 210px; overflow: auto; padding: 12px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(0,0,0,.2); color: #d9dfd3; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .secondary-action { border: 1px solid rgba(255,255,255,.14); border-radius: 9px; background: transparent; color: #e8eee3; padding: 9px 12px; font-size: 11px; }
 .bridge-safety { margin: 0; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.08); }
+.bridge-control-card { display: grid; gap: 13px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.025); }
+.bridge-hosted-copy { display: grid; gap: 5px; }
+.bridge-hosted-copy > strong, .bridge-toggle-row strong { color: var(--text, #f5f6f2); font-size: 12px; }
+.bridge-hosted-copy p { margin: 0; color: var(--muted, #9da39a); font-size: 11px; line-height: 1.5; }
+.bridge-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.09); }
+.bridge-toggle-row > div { display: grid; gap: 4px; }
+.bridge-toggle-row > div > span { color: var(--muted, #9da39a); font-size: 10px; }
+.bridge-switch { display: inline-flex; align-items: center; gap: 8px; min-width: 90px; justify-content: center; padding: 6px 9px; border: 1px solid rgba(199,243,106,.35); border-radius: 999px; color: #dce4d5; background: rgba(255,255,255,.04); font-size: 10px; cursor: pointer; }
+.bridge-switch[aria-checked="true"] { color: #17200d; border-color: var(--lime, #c7f36a); background: var(--lime, #c7f36a); }
+.bridge-switch-thumb { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.bridge-actions button:disabled { opacity: .45; cursor: not-allowed; }

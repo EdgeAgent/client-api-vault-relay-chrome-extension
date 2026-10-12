@@ -101,12 +101,16 @@
             <div class="surface-intro"><div><p class="kicker">APP ↔ LOCAL GATEWAY</p><h2>Connect your workspace.</h2></div><span id="bridgeBadge" class="count-chip">NOT PAIRED</span></div>
             <p class="surface-description">Pair this extension with an agency or client workspace. Provider keys stay in this encrypted vault; the app receives run receipts, never your keys or browser cookies.</p>
             <form id="bridgePairForm" class="entry-form bridge-form">
-              <label>Autopilot app origin<input id="bridgeBaseUrl" type="url" placeholder="https://app.example.com" required /></label>
-              <label>One-time pairing code<input id="bridgePairCode" type="text" minlength="8" maxlength="80" autocomplete="one-time-code" placeholder="Generate this in the app's Connections page" required /></label>
+              <label>EDGE | AGENCY app origin<input id="bridgeBaseUrl" type="url" placeholder="https://app.example.com" required /></label>
+              <label>Client/project link code<input id="bridgePairCode" type="text" minlength="8" maxlength="80" autocomplete="one-time-code" placeholder="Create a one-time code from the project's Connections page" required /></label>
               <button class="action-button action-lime" type="submit"><span>Approve origin &amp; pair</span><span aria-hidden="true">↗</span></button>
             </form>
             <div id="bridgeConnected" class="bridge-connected" hidden>
-              <div class="bridge-summary"><strong id="bridgeWorkspace">—</strong><span id="bridgeRole">—</span></div>
+              <div class="bridge-summary"><div><strong id="bridgeWorkspace">EDGE | AGENCY</strong><small id="bridgeProject">Client · Project</small></div><span id="bridgeRole">—</span></div>
+              <div class="bridge-control-card">
+                <div class="bridge-hosted-copy"><span class="kicker">AGENCY-HOSTED WORKFLOWS</span><strong>Stay under agency server control.</strong><p>Pausing this switch only pauses this device’s logged-in browser access. Workflows that run entirely on the agency’s server can continue there.</p></div>
+                <div class="bridge-toggle-row"><div><strong id="bridgeLocalAccessState">Browser access enabled</strong><span>Client browser · this device only</span></div><button id="bridgeAccessSwitch" class="bridge-switch" type="button" role="switch" aria-checked="true" aria-label="Pause this device's browser access"><span class="bridge-switch-thumb"></span><span id="bridgeAccessActionLabel">Pause</span></button></div>
+              </div>
               <div class="bridge-actions"><button id="bridgeSyncButton" class="action-button action-lime" type="button"><span>Sync approved work</span><span aria-hidden="true">↗</span></button><button id="bridgeDisconnectButton" class="ghost-danger" type="button">Disconnect</button></div>
               <div class="bridge-page-tools"><button id="capturePageButton" class="secondary-action" type="button">Index this tab's safe structure</button><span id="captureMeta">No page context captured</span></div>
               <pre id="bridgeQueue" class="bridge-queue" aria-live="polite">No pending work loaded.</pre>

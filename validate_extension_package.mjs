@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "extension");
 const manifest = JSON.parse(await readFile(resolve(root, "manifest.json"), "utf8"));
 const popup = await readFile(resolve(root, "popup.html"), "utf8");
-const requiredControls = ["providerTrigger", "providerMenu", "providerCommandSearch", "chatPanel", "vaultPanel", "catalogPanel", "bridgePanel", "bridgePairForm", "bridgeSyncButton", "capturePageButton", "workspaceEntriesAction", "workspaceProviderAction", "workspaceLockAction"];
+const requiredControls = ["providerTrigger", "providerMenu", "providerCommandSearch", "chatPanel", "vaultPanel", "catalogPanel", "bridgePanel", "bridgePairForm", "bridgeProject", "bridgeAccessSwitch", "bridgeSyncButton", "capturePageButton", "workspaceEntriesAction", "workspaceProviderAction", "workspaceLockAction"];
 
 if (manifest.manifest_version !== 3) throw new Error("Extension must use Manifest V3.");
 if (!/^\d+\.\d+\.\d+$/.test(manifest.version || "")) throw new Error("Manifest version must use a Chrome-compatible semantic version.");

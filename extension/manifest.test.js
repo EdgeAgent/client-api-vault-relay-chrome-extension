@@ -12,7 +12,7 @@ describe("Chrome extension manifest", () => {
       manifest_version: 3,
       name: "Autopilot Bridge — Vault Relay",
       short_name: "Autopilot Bridge",
-      version: "1.1.0",
+      version: "1.1.1",
       minimum_chrome_version: "121",
       action: { default_popup: "popup.html" },
       background: { service_worker: "background.js", type: "module" },

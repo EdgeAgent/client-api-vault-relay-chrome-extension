@@ -19,7 +19,14 @@ export function validatePairingResult(result) {
   return {
     deviceToken: result.deviceToken,
     workspaceName: result.workspaceName.trim().slice(0, 120),
+    agencyName: typeof result.agencyName === "string" ? result.agencyName.trim().slice(0, 120) : "EDGE | AGENCY",
+    clientName: typeof result.clientName === "string" ? result.clientName.trim().slice(0, 120) : "",
+    projectName: typeof result.projectName === "string" ? result.projectName.trim().slice(0, 120) : "",
     role: result.role,
     expiresAt: typeof result.expiresAt === "string" ? result.expiresAt : null,
   };
+}
+
+export function isLocalBrowserAccessEnabled(bridge) {
+  return Boolean(bridge?.deviceToken) && bridge.localEnabled !== false;
 }
