@@ -1,123 +1,58 @@
-# Client API Vault Relay Chrome Extension
+# Autopilot Bridge — Client API Vault Relay
 
-![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)
-![Encrypted Vault](https://img.shields.io/badge/Credentials-Encrypted%20locally-45d49b?style=for-the-badge&logo=shield&logoColor=white)
-![Version](https://img.shields.io/badge/Version-1.0.1-caff58?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Extension%20tests-17%20passing-45d49b?style=for-the-badge&logo=vitest&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-a68cff?style=for-the-badge)
+**Client-owned credentials. Agency/client handoff. Approved provider access.**
 
-> **Client-owned keys. Approved provider access.**
->
-> Client API Vault Relay is a Manifest V3 Chrome extension for keeping API provider credentials inside an encrypted local vault. A provider request is allowed only after the person using the extension selects that provider and approves its precise origin at runtime.
+A Manifest V3 Chrome extension that continues the existing Client API Vault Relay project. It combines the password-encrypted local API vault and exact-origin consent model with a workspace pairing surface for an agency/client app. The extension is intended to be the user's local gateway: the app can authorize work and receive receipts, while API keys stay in the user's encrypted Chrome profile.
 
-![Client API Vault Relay product preview](vault-relay-product-preview.png)
+> **Integration status:** this repository implements the extension client and publishes the expected app API contract in [`docs/autopilot-bridge-api.md`](docs/autopilot-bridge-api.md). Pairing, queue sync and revocation become live only when the app implements those endpoints and tenant-scoped token rules. No connected state is fabricated when the app is absent.
 
-## What it solves
+## What is included
 
-Teams often need to discover provider endpoints, save connection details, and run approved requests without spreading raw API keys through a shared control plane. This extension creates a clearer trust boundary: credentials remain encrypted in the user’s Chrome profile, while provider-specific access is selected and approved in context.
-
-| Capability | What it does | Boundary |
+| Capability | Behavior | Boundary |
 | --- | --- | --- |
-| **Encrypted local vault** | Stores provider entries in a password-protected envelope in `chrome.storage.local`. | The vault password is never persisted. |
-| **Exact-origin approval** | Requests Chrome permission only for the provider origin the user chooses at the point of use. | No blanket runtime access is assumed. |
-| **Provider catalog** | Displays sourced, free-access discovery records with base URLs, route templates, setup links, and provider labels. | Discovery data is not a credential or authorization. |
-| **Direct vault entry** | Prefills supported provider details from a compatible catalog record. | The user still controls the credentials and approval. |
-| **Session lock** | Clears in-memory access when the vault is locked. | Secrets are not left active indefinitely. |
+| Encrypted local vault | PBKDF2-SHA-256 + AES-256-GCM encrypted credentials and paired device token; vault password is never stored. | Secrets are cleared from popup memory on lock. |
+| Exact-origin provider access | Requires Chrome's point-of-use permission for a specific provider origin. | No site-wide install-time access. |
+| App workspace pairing | Accepts a one-time code from an authenticated workspace and stores the returned opaque device token inside the encrypted vault. | Requires the companion app API described in the contract; app stores only a hash. |
+| Local API gateway | Existing OpenAI-compatible, Gemini and Ollama adapters send provider requests from the extension worker. | Provider keys are not sent to the agency/client app. |
+| Semantic page index | On a user click, reads visible headings, labels and controls from the active tab; masks sensitive fields and patterns. | No cookies, hidden content, form values, screenshots, or automatic page actions. |
+| Manifest V3 package | Local popup, worker and icons in 16/32/48/128 px sizes. | No remotely loaded extension code. |
 
-## Security model
-
-The extension is deliberately designed around a client-controlled credential boundary.
-
-> API keys are encrypted in the extension’s local storage using a user-created password. The password is not stored. Keys and prompts are sent only to the provider selected by the user after that provider’s exact origin has been approved.
-
-| Included | Intentionally excluded |
-| --- | --- |
-| Manifest V3 popup and local background worker | Remote script loading |
-| Local encrypted credential envelope | Advertising analytics |
-| User-approved provider-origin permissions | Developer-operated credential relay |
-| Source-attributed endpoint discovery | Silent provider-origin access |
+The provider catalog is discovery material only: a listing does not guarantee that a provider is free, available, or authorized. This version displays app-assigned queue metadata only. It does **not** execute arbitrary page actions; an app response is not permission to act. Destructive/submitted browser changes still need an explicit exact-action approval workflow before execution is enabled.
 
 ## Install in Chrome
 
-### Option A — Chrome Web Store archive
+1. Download `client-api-vault-relay-chrome-extension-1.1.0.zip` from [`release/`](release/), or load the unpacked `extension/` directory.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Select **Load unpacked** and choose `extension/` (or use **Load unpacked** with the extracted release archive).
+4. Open the extension and create a vault with a password of at least 12 characters.
+5. Add a provider from **APIs**, provide your own key, and allow only the exact provider origin when Chrome asks.
+6. When the companion app supports the bridge contract, generate a one-use pairing code in its authenticated workspace and enter the app origin and code under **BRIDGE**.
 
-The verified Chrome upload archive is included at:
+The release ZIP is an installable Chrome extension, not a published Chrome Web Store listing. Store submission, listing review and distribution are separate work.
 
-```text
-client-api-vault-relay-chrome-extension-1.0.1.zip
-```
+## App gateway contract
 
-Use this ZIP for the Chrome Web Store Developer Dashboard. It contains the manifest, popup runtime, background worker, extension-local logic, and all required icon images.
-
-### Option B — load the source locally
-
-1. Download `client-api-vault-relay-chrome-extension-source-1.0.1.zip` from this repository and extract it.
-2. Open `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Select **Load unpacked**.
-5. Choose the extracted `extension/` directory.
-6. Open the extension popup and create a local vault.
-
-## First-use workflow
-
-1. Create and unlock an encrypted vault using a password you control.
-2. Open **APIs** to inspect a provider record, setup link, base URL, and route template.
-3. Add a provider manually, or prefill a supported provider record.
-4. Select the provider when you are ready to use it.
-5. Approve the precise provider origin when Chrome asks.
-6. Lock the vault when the current session is complete.
-
-The provider catalog is a discovery aid. A listed provider may require an account, a key, a particular region, or a manual adapter review. The catalog is never a guarantee of availability or authorization.
+See [`docs/autopilot-bridge-api.md`](docs/autopilot-bridge-api.md) for the endpoints, one-use pairing flow, token hashing, expiry, role enforcement, idempotency and data boundaries. The extension calls only same-origin `/api/extension/*` paths over HTTPS (or explicitly granted loopback HTTP for local development), omits cookies, rejects redirects, and never transmits its provider keys.
 
 ## Development and verification
 
-This repository keeps the extension package and its validation scripts together. Install dependencies with `pnpm install`, then use the following commands from the repository root:
+From the repo root, with dependencies installed:
 
 ```bash
 pnpm run extension:validate
 pnpm run extension:package
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm run extension:validate` | Checks the package contract, then runs the extension test suite. |
-| `pnpm run extension:package` | Validates the extension and creates a fresh Chrome Web Store ZIP. |
-| `pnpm test` | Runs the broader repository test suite. |
-| `pnpm check` | Runs the TypeScript check. |
+The validator checks Manifest V3, exact controls, package-local scripts, CSP, and valid icon dimensions. The tests cover the existing vault/provider/permission flows and the new bridge URL/response contract. The packaged ZIP excludes test files and contains only runtime assets.
 
-The current package workflow verifies Manifest V3 metadata, CSP and local-code boundaries, required icon paths, catalog fields, permission behavior, encrypted-vault behavior, and core popup controls. The complete repository source is also available as `client-api-vault-relay-chrome-extension-source-1.0.1.zip` in this repository root.
+## Security and data handling
 
-## Source archive map
-
-```text
-extension/                         Manifest V3 source loaded by Chrome
-  manifest.json                    Extension identity, permissions, CSP, and icon mappings
-  popup.html / popup.js / styles.css
-                                    Popup experience and provider catalog surface
-  vault.js                          Local encrypted vault handling
-  permissions.js                    Exact provider-origin approval flow
-  catalog.js                        Source-attributed provider discovery data
-  background.js                     Extension background worker
-  icons/                            Required 16 / 32 / 48 / 128px assets
-  *.test.js                         Extension unit and popup-flow tests
-package_chrome_extension.mjs        Chrome ZIP packaging entry point
-validate_extension_package.mjs      Deterministic package validation entry point
-release/                            Verified upload archive
-docs/images/                        Product-preview image used in this README
-```
-
-## Chrome Web Store checklist
-
-- [ ] Upload `client-api-vault-relay-chrome-extension-1.0.1.zip`, not the source directory.
-- [ ] Complete Store Listing, Privacy, and Distribution fields in the Developer Dashboard.
-- [ ] Describe the vault as local encrypted storage and disclose the provider-origin permission flow.
-- [ ] Do not claim provider records are permanently free, universally available, or automatically approved.
-- [ ] Add reviewer instructions that explain the local vault setup and exact-origin permission prompt.
+- The extension encrypts credentials and the app device token in the local vault; the password is never stored.
+- Host permission is optional and granted at runtime for the precise app/provider origin.
+- Network calls originate in the service worker with `credentials: "omit"`, no-store caching and redirects disabled.
+- The page index is only read on explicit user action. It omits input values and cookies, masks common sensitive patterns, and remains local in this version.
+- App pairing must be single-use, short-lived, rate-limited, revocable and workspace-scoped. The app must hash device credentials at rest and audit every request. See the API contract.
 
 ## License
 
-This repository is released under the [MIT License](LICENSE).
-
----
-
-Built to keep **provider credentials client-controlled** and **origin access explicit**.
+MIT; see [`LICENSE`](LICENSE). The existing icon art is retained from the original project.
