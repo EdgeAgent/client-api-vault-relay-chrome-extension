@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vault Relay</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="bridge.css" />
+  </head>
+  <body>
+    <main class="product-shell">
+      <section id="setupView" class="onboarding-view" hidden>
+        <div class="ambient-orb orb-one"></div><div class="ambient-orb orb-two"></div>
+        <header class="onboarding-brand"><img src="icons/icon-48.png" alt="" /><span>VAULT RELAY</span><span class="build-badge">LOCAL FIRST</span></header>
+        <div class="onboarding-copy"><p class="kicker">CLIENT-OWNED ACCESS</p><h1>Your keys.<br /><em>Your command.</em></h1><p>Create a password to establish an encrypted vault inside this Chrome profile. It is never saved alongside your credentials.</p></div>
+        <form id="createVaultForm" class="vault-form">
+          <label>Vault password<input id="createPassword" type="password" minlength="12" autocomplete="new-password" placeholder="At least 12 characters" required /></label>
+          <label>Confirm password<input id="confirmPassword" type="password" minlength="12" autocomplete="new-password" placeholder="Repeat password" required /></label>
+          <button class="action-button action-lime" type="submit"><span>Create encrypted vault</span><span aria-hidden="true">↗</span></button>
+        </form>
+        <footer class="onboarding-footer"><span>AES-256-GCM</span><span>PBKDF2-HARDENED</span><span>LOCAL STORAGE</span></footer>
+      </section>
+
+      <section id="unlockView" class="onboarding-view" hidden>
+        <div class="ambient-orb orb-one"></div><div class="ambient-orb orb-two"></div>
+        <header class="onboarding-brand"><img src="icons/icon-48.png" alt="" /><span>VAULT RELAY</span><span class="build-badge">LOCKED</span></header>
+        <div class="onboarding-copy"><p class="kicker">SECURE SESSION</p><h1>Welcome<br /><em>back.</em></h1><p>Your provider entries are encrypted on this device. Unlock them only for this active extension session.</p></div>
+        <form id="unlockVaultForm" class="vault-form">
+          <label>Vault password<input id="unlockPassword" type="password" minlength="12" autocomplete="current-password" placeholder="Enter your password" required /></label>
+          <button class="action-button action-lime" type="submit"><span>Unlock workspace</span><span aria-hidden="true">↗</span></button>
+        </form>
+        <footer class="onboarding-footer"><span>NO CLOUD SYNC</span><span>NO SHARED KEYS</span><span>CLIENT CONTROLLED</span></footer>
+      </section>
+
+      <section id="appView" class="app-view" hidden>
+        <aside class="control-rail" aria-label="Workspace navigation">
+          <div class="rail-brand"><img src="icons/icon-32.png" alt="Vault Relay" /></div>
+          <div class="rail-divider"></div>
+          <button class="rail-button active" data-surface="chat" type="button" aria-label="Private chat" title="Private chat"><span aria-hidden="true">✦</span><small>CHAT</small></button>
+          <button class="rail-button" data-surface="vault" type="button" aria-label="Vault entries" title="Vault entries"><span aria-hidden="true">⌘</span><small>VAULT</small></button>
+          <button class="rail-button" data-surface="catalog" type="button" aria-label="Free API endpoints" title="Free API endpoints"><span aria-hidden="true">◌</span><small>APIs</small></button>
+          <button class="rail-button" data-surface="bridge" type="button" aria-label="Autopilot app bridge" title="Autopilot app bridge"><span aria-hidden="true">⇄</span><small>BRIDGE</small></button>
+          <div class="rail-spacer"></div>
+          <button id="lockButton" class="rail-button rail-lock" type="button" aria-label="Lock vault" title="Lock vault"><span aria-hidden="true">⌁</span><small>LOCK</small></button>
+        </aside>
+
+        <div class="workspace-column">
+          <header class="workspace-header">
+            <div><p id="surfaceKicker" class="kicker">PRIVATE CHAT</p><h1 id="surfaceTitle">Ask with intent.</h1></div>
+            <div class="header-tools"><span class="session-pulse"><i></i> SESSION SECURE</span><button id="headerAddEntry" class="header-add" type="button" aria-label="Add encrypted provider entry">+</button></div>
+          </header>
+
+          <section class="provider-command" aria-label="Active provider">
+            <button id="providerTrigger" class="provider-trigger" type="button" aria-haspopup="dialog" aria-expanded="false">
+              <span class="provider-sigil" aria-hidden="true">↯</span>
+              <span class="provider-current"><span id="providerName">No provider selected</span><small id="providerMeta">Add an encrypted entry to start</small></span>
+              <span class="provider-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="providerMenu" class="provider-menu" role="dialog" aria-label="Choose active provider" hidden>
+              <div class="menu-search"><span aria-hidden="true">⌕</span><input id="providerCommandSearch" type="search" autocomplete="off" placeholder="Search encrypted entries" /></div>
+              <div id="providerCommandList" class="command-list" role="listbox" aria-label="Encrypted provider entries"></div>
+              <button id="providerMenuAdd" class="menu-add-entry" type="button"><span>+</span> Add a provider entry <kbd>⌘ N</kbd></button>
+            </div>
+          </section>
+
+          <section id="chatPanel" class="surface chat-surface">
+            <div class="conversation-head"><span class="conversation-label">PRIVATE THREAD</span><span id="messageCount" class="thread-count">0 MESSAGES</span></div>
+            <div id="chatMessages" class="messages" aria-live="polite"></div>
+            <form id="chatForm" class="composer">
+              <label class="sr-only" for="chatInput">Message</label><textarea id="chatInput" rows="3" placeholder="Write a request, refine an idea, or run a private prompt…" required></textarea>
+              <div class="composer-footer"><span><kbd>⌘</kbd><kbd>↵</kbd> to send</span><button class="action-button action-lime send-button" type="submit"><span>Send</span><span aria-hidden="true">↗</span></button></div>
+            </form>
+          </section>
+
+          <section id="vaultPanel" class="surface vault-surface" hidden>
+            <div class="surface-intro"><div><p class="kicker">ENCRYPTED LOCALLY</p><h2>Your provider vault.</h2></div><button id="deleteVault" class="ghost-danger" type="button">Delete vault</button></div>
+            <p class="surface-description">Keys are masked and never returned after saving. Every provider request requires explicit origin permission.</p>
+            <div id="vaultEntries" class="entry-list"></div>
+            <details id="addEntryDetails" class="entry-studio"><summary><span>+</span> Add encrypted provider entry <small>Client-owned credential</small></summary>
+              <form id="addEntryForm" class="entry-form">
+                <label>Provider preset<select id="providerPreset"></select></label>
+                <label id="customAdapterField" hidden>Request format<select id="customAdapter"><option value="openai">OpenAI-compatible chat</option><option value="gemini">Google Gemini</option><option value="ollama">Ollama chat</option></select></label>
+                <div class="form-pair"><label>Entry label<input id="entryLabel" maxlength="60" placeholder="Client development" required /></label><label>Default model<input id="entryModel" maxlength="160" required /></label></div>
+                <label>Provider API key<input id="entryKey" type="password" autocomplete="off" placeholder="Client-controlled credential" /></label>
+                <label>Documented base URL<input id="entryBaseUrl" type="url" required /></label>
+                <p id="entryHelp" class="entry-help"></p>
+                <button class="action-button action-lime" type="submit"><span>Encrypt &amp; save entry</span><span aria-hidden="true">↗</span></button>
+              </form>
+            </details>
+          </section>
+
+          <section id="catalogPanel" class="surface catalog-surface" hidden>
+            <div class="surface-intro"><div><p class="kicker">FREE PROVIDER DISCOVERY</p><h2>Free APIs &amp; endpoints.</h2></div><span id="providerCount" class="count-chip"></span></div>
+            <p class="surface-description">Inspect the documented base URL and request route for each free-tier provider before you add your own credential. A listing is not a shared key or an availability guarantee.</p>
+            <div class="catalog-search"><span aria-hidden="true">⌕</span><input id="providerSearch" type="search" placeholder="Search free APIs, endpoints, adapters, or models" /></div>
+            <div id="providerCatalog" class="provider-grid"></div>
+            <div class="catalog-sources"><span>ATTRIBUTED SOURCES</span><div id="sourceCatalogues" class="source-list"></div></div>
+          </section>
+
+          <section id="bridgePanel" class="surface bridge-surface" hidden>
+            <div class="surface-intro"><div><p class="kicker">APP ↔ LOCAL GATEWAY</p><h2>Connect your workspace.</h2></div><span id="bridgeBadge" class="count-chip">NOT PAIRED</span></div>
+            <p class="surface-description">Pair this extension with an agency or client workspace. Provider keys stay in this encrypted vault; the app receives run receipts, never your keys or browser cookies.</p>
+            <form id="bridgePairForm" class="entry-form bridge-form">
+              <label>EDGE | AGENCY app origin<input id="bridgeBaseUrl" type="url" placeholder="https://app.example.com" required /></label>
+              <label>Client/project link code<input id="bridgePairCode" type="text" minlength="8" maxlength="80" autocomplete="one-time-code" placeholder="Create a one-time code from the project's Connections page" required /></label>
+              <button class="action-button action-lime" type="submit"><span>Approve origin &amp; pair</span><span aria-hidden="true">↗</span></button>
+            </form>
+            <div id="bridgeConnected" class="bridge-connected" hidden>
+              <div class="bridge-summary"><div><strong id="bridgeWorkspace">EDGE | AGENCY</strong><small id="bridgeProject">Client · Project</small></div><span id="bridgeRole">—</span></div>
+              <div class="bridge-control-card">
+                <div class="bridge-hosted-copy"><span class="kicker">AGENCY-HOSTED WORKFLOWS</span><strong>Stay under agency server control.</strong><p>Pausing this switch only pauses this device’s logged-in browser access. Workflows that run entirely on the agency’s server can continue there.</p></div>
+                <div class="bridge-toggle-row"><div><strong id="bridgeLocalAccessState">Browser access enabled</strong><span>Client browser · this device only</span></div><button id="bridgeAccessSwitch" class="bridge-switch" type="button" role="switch" aria-checked="true" aria-label="Pause this device's browser access"><span class="bridge-switch-thumb"></span><span id="bridgeAccessActionLabel">Pause</span></button></div>
+              </div>
+              <div class="bridge-actions"><button id="bridgeSyncButton" class="action-button action-lime" type="button"><span>Sync approved work</span><span aria-hidden="true">↗</span></button><button id="bridgeDisconnectButton" class="ghost-danger" type="button">Disconnect</button></div>
+              <div class="bridge-page-tools"><button id="capturePageButton" class="secondary-action" type="button">Index this tab's safe structure</button><span id="captureMeta">No page context captured</span></div>
+              <pre id="bridgeQueue" class="bridge-queue" aria-live="polite">No pending work loaded.</pre>
+            </div>
+            <p class="bridge-safety">Pairing codes are single-use. Chrome asks permission only for the app and provider origins you select. Page capture includes labels and visible structure only; form values, cookies and screenshots are excluded.</p>
+          </section>
+
+          <section class="workspace-panel" aria-label="Vault workspace status">
+            <div class="workspace-panel-top"><div><p class="kicker">WORKSPACE CONTROL</p><h2 id="workspaceStatus">Vault unlocked</h2></div><span class="trust-stamp">LOCAL ONLY</span></div>
+            <div class="workspace-metrics"><button id="workspaceEntriesAction" type="button"><strong id="workspaceEntryCount">0</strong><span>encrypted entries</span></button><button id="workspaceProviderAction" type="button"><strong id="workspaceProviderStatus">—</strong><span>active provider</span></button><button id="workspaceLockAction" type="button"><strong>⌁</strong><span>lock session</span></button></div>
+          </section>
+        </div>
+      </section>
+      <p id="status" class="status" role="status"></p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
